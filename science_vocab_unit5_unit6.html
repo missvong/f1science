@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>科學英文詞彙配對遊戲 | 英中配對挑戰</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none; /* 避免選中文字，但保留複製貼上可選，單純視覺乾淨 */
+        }
+
+        body {
+            background: linear-gradient(145deg, #1e5a7d 0%, #0f3b4f 100%);
+            font-family: 'Segoe UI', 'Poppins', 'Roboto', 'Noto Sans TC', system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 24px;
+        }
+
+        /* 主遊戲卡片 */
+        .game-container {
+            max-width: 1100px;
+            width: 100%;
+            background: rgba(255, 248, 225, 0.95);
+            border-radius: 56px;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(255,255,240,0.6);
+            overflow: hidden;
+            padding: 20px 24px 32px;
+            transition: all 0.2s;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 1.9rem;
+            margin: 0 0 8px 0;
+            background: linear-gradient(135deg, #1f4e6c, #2c7a4d);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+
+        .sub {
+            text-align: center;
+            color: #2c5a6e;
+            font-weight: 500;
+            margin-bottom: 24px;
+            border-bottom: 2px dashed #b9cfd4;
+            display: inline-block;
+            width: auto;
+            margin-left: auto;
+            margin-right: auto;
+            padding-bottom: 6px;
+            font-size: 0.95rem;
+        }
+
+        /* 進度與分數 */
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            background: #eef3f0;
+            padding: 12px 20px;
+            border-radius: 60px;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+            gap: 12px;
+            box-shadow: inset 0 1px 3px #0001, 0 5px 8px rgba(0,0,0,0.05);
+        }
+
+        .score-box, .progress-box, .remain-box {
+            background: white;
+            padding: 6px 18px;
+            border-radius: 40px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #1f5e42;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .score-box span, .progress-box span, .remain-box span {
+            color: #c4450c;
+            font-size: 1.3rem;
+            margin-left: 6px;
+        }
+
+        /* 英文題目區 */
+        .question-area {
+            background: #ffffffdd;
+            backdrop-filter: blur(2px);
+            border-radius: 48px;
+            padding: 20px 20px;
+            margin-bottom: 32px;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            border: 1px solid #fffaec;
+        }
+
+        .english-word {
+            font-size: 2.4rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #1c3f3c;
+            background: #fef7cf;
+            display: inline-block;
+            padding: 12px 36px;
+            border-radius: 68px;
+            box-shadow: inset 0 0 0 2px white, 0 8px 14px rgba(0,0,0,0.1);
+            word-break: break-word;
+        }
+
+        .hint-text {
+            margin-top: 12px;
+            color: #5a6e4a;
+            font-size: 0.9rem;
+        }
+
+        /* 選項按鈕網格 */
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+            gap: 14px;
+            margin: 20px 0 28px;
+        }
+
+        .option-btn {
+            background: #f5f2e0;
+            border: 2px solid #c7cfb7;
+            border-radius: 60px;
+            padding: 12px 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1f443b;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            font-family: inherit;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background: #e3e9ce;
+            transform: scale(0.98);
+            border-color: #6f9e7c;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .option-btn.correct-highlight {
+            background: #9fd3b0;
+            border-color: #2b6e3c;
+            color: #1f472a;
+            box-shadow: 0 0 0 2px #f5ffdc;
+        }
+
+        .option-btn.wrong-highlight {
+            background: #f2b5a8;
+            border-color: #bc4a2c;
+            color: #5e2a1a;
+            text-decoration: line-through;
+        }
+
+        .option-btn:disabled {
+            cursor: default;
+            opacity: 0.7;
+        }
+
+        /* 回饋訊息 */
+        .feedback {
+            background: #e9e5d5;
+            border-radius: 40px;
+            padding: 12px 18px;
+            text-align: center;
+            font-weight: 500;
+            margin-top: 8px;
+            margin-bottom: 18px;
+            color: #2f5d50;
+            font-size: 1rem;
+            transition: 0.1s;
+        }
+
+        .next-btn {
+            background: #ffb347;
+            background: linear-gradient(95deg, #ff9a3c, #ffbc6e);
+            border: none;
+            font-size: 1.3rem;
+            font-weight: bold;
+            padding: 12px 28px;
+            border-radius: 60px;
+            color: white;
+            cursor: pointer;
+            width: 100%;
+            max-width: 260px;
+            margin: 0 auto;
+            display: block;
+            box-shadow: 0 8px 14px rgba(0,0,0,0.2);
+            transition: all 0.15s;
+            font-family: inherit;
+        }
+
+        .next-btn:hover:not(:disabled) {
+            background: linear-gradient(95deg, #ff871f, #ffaa4a);
+            transform: scale(0.98);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .next-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .reset-btn {
+            background: #4c6a5e;
+            margin-top: 16px;
+            background: linear-gradient(95deg, #3d5a4f, #5b8270);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .footer-buttons {
+            display: flex;
+            gap: 18px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        /* 完成訊息 */
+        .completion-msg {
+            text-align: center;
+            background: #d4e6c3;
+            border-radius: 48px;
+            padding: 20px;
+            font-weight: bold;
+            font-size: 1.3rem;
+            margin: 20px 0 0;
+            color: #1b4d3e;
+        }
+
+        @media (max-width: 550px) {
+            .game-container {
+                padding: 16px;
+            }
+            .english-word {
+                font-size: 1.5rem;
+                padding: 8px 20px;
+            }
+            .option-btn {
+                font-size: 0.85rem;
+                padding: 10px 6px;
+            }
+            .stats-bar {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="game-container" id="gameRoot">
+    <h1>🔬 科學英中配對實驗室 ⚛️</h1>
+    <div style="text-align:center;"><div class="sub">🎯 選出正確的中文翻譯</div></div>
+
+    <div class="stats-bar">
+        <div class="score-box">🏆 得分 <span id="scoreValue">0</span></div>
+        <div class="progress-box">📋 已配對 <span id="matchedCount">0</span> / <span id="totalCountSpan">0</span></div>
+        <div class="remain-box">⏳ 剩餘 <span id="remainCount">0</span></div>
+    </div>
+
+    <div class="question-area">
+        <div class="english-word" id="currentEnglish">---</div>
+        <div class="hint-text">👇 點擊下方正確的中文配對</div>
+    </div>
+
+    <div id="optionsContainer" class="options-grid"></div>
+
+    <div id="feedbackMsg" class="feedback">✨ 點擊選項，選擇正確的配對 ✨</div>
+
+    <div class="footer-buttons">
+        <button class="next-btn" id="nextBtn">➡ 下一題</button>
+        <button class="next-btn reset-btn" id="resetBtn">🔄 重新挑戰</button>
+    </div>
+    <div id="completionArea"></div>
+</div>
+
+<script>
+    // ---------- 依照 PDF 內容建立完整詞庫 (英文 => 中文) ----------
+    // 總共 39 個詞彙 (每個詞出現至少一次, 全部都要出)
+    const fullVocabulary = new Map([
+        ["Energy", "能量"],
+        ["Sound energy", "聲能"],
+        ["Chemical energy", "化學能"],
+        ["Light energy", "光能"],
+        ["Thermal energy", "熱能"],
+        ["Kinetic energy", "動能"],
+        ["Potential energy", "勢能"],
+        ["Electrical energy", "電能"],
+        ["Energy conversion", "能量轉換"],
+        ["Law of conservation of energy", "能量守恒定律"],
+        ["Sankey diagram", "桑基圖"],
+        ["Energy converter", "能量轉換圖"],
+        ["Efficiency", "效率"],
+        ["Non-renewable energy source", "不可現生能源"],
+        ["Air pollution", "空氣污染"],
+        ["Global warming", "全球增温"],
+        ["Acid rain", "酸雨"],
+        ["Nuclear power", "核能"],
+        ["Renewable energy source", "可再生能源"],
+        ["Solar power", "太陽能"],
+        ["Wind power", "風力"],
+        ["Hydroelectric power", "水力發電"],
+        ["Biomass energy", "生物質能"],
+        ["Biofuel", "生物燃料"],
+        ["Matter", "物質"],
+        ["Mass", "質量"],
+        ["Space", "空間"],
+        ["Particle", "粒子"],
+        ["Brownian motion", "布朗運動"],
+        ["Zigzag path", "麵齒形路徑"],
+        ["Particle Theory", "粒子理論"],
+        ["Evidence", "證據"],
+        ["Atom", "原子"],
+        ["Molecule", "分子"],
+        ["Chemical formula", "化學式"],
+        ["Solid", "固體"],
+        ["Liquid", "液體"],
+        ["Gas", "氣體"],
+        ["Particle model", "粒子模型"]
+    ]);
+
+    // 提取所有詞條 (英文, 中文) 陣列便於操作
+    let allEntries = [];
+    for (let [eng, chn] of fullVocabulary.entries()) {
+        allEntries.push({ english: eng, chinese: chn });
+    }
+    const TOTAL_ITEMS = allEntries.length;  // 39
+
+    // ---------- 遊戲狀態 ----------
+    let currentGameItems = [];       // 尚未配對的項目 { english, chinese, id } (id用於追蹤)
+    let matchedSet = new Set();       // 存放已配對成功的項目id (或是索引)
+    let currentQuestion = null;       // 當前顯示的項目 { english, chinese, id }
+    let currentOptions = [];           // 當前題目的選項陣列 [{ chinese, isCorrect, id? }]
+    let score = 0;                    // 正確配對次數 (每一題首次答對才計分)
+    let isAnswered = false;           // 目前題目是否已經作答
+    let currentCorrectChinese = "";   // 當前正確中文
+    let nextButtonLock = false;       // 避免重複觸發
+
+    // DOM 元素
+    const currentEnglishSpan = document.getElementById("currentEnglish");
+    const optionsContainer = document.getElementById("optionsContainer");
+    const feedbackDiv = document.getElementById("feedbackMsg");
+    const nextBtn = document.getElementById("nextBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const scoreSpan = document.getElementById("scoreValue");
+    const matchedCountSpan = document.getElementById("matchedCount");
+    const totalCountSpan = document.getElementById("totalCountSpan");
+    const remainCountSpan = document.getElementById("remainCount");
+    const completionArea = document.getElementById("completionArea");
+
+    // 輔助函式: 更新統計UI
+    function updateStatsUI() {
+        const matchedTotal = matchedSet.size;
+        const remainTotal = TOTAL_ITEMS - matchedTotal;
+        scoreSpan.innerText = score;
+        matchedCountSpan.innerText = matchedTotal;
+        totalCountSpan.innerText = TOTAL_ITEMS;
+        remainCountSpan.innerText = remainTotal;
+    }
+
+    // 從尚未配對的陣列中隨機選取一個項目作為新題目 (避免重複出已配對的)
+    function getRandomUnmatchedItem() {
+        if (currentGameItems.length === 0) return null;
+        const randomIndex = Math.floor(Math.random() * currentGameItems.length);
+        return currentGameItems[randomIndex];
+    }
+
+    // 產生亂數選項: 包含正確中文 + 從其他尚未配對以及全域詞庫隨機取不同中文 (為了豐富度, 可從全部中文裡隨機取不重複且不等於正確中文)
+    // 為增加挑戰性, 選項池可使用所有詞彙中文 (但避免與正確中文重複, 並且盡量不同)
+    function generateOptions(correctChinese, currentItemId) {
+        // 選項個數固定為 4
+        const OPTION_COUNT = 4;
+        let optsSet = new Set();
+        optsSet.add(correctChinese);
+
+        // 建立所有可能的中文池 (從 fullVocabulary 裡取全部中文)
+        const allChineseList = Array.from(fullVocabulary.values());
+        // 過濾掉已經在 optsSet 內的且避免無限迴圈
+        while (optsSet.size < OPTION_COUNT) {
+            const randomChinese = allChineseList[Math.floor(Math.random() * allChineseList.length)];
+            optsSet.add(randomChinese);
+        }
+        // 轉成陣列並打亂順序
+        let optsArray = Array.from(optsSet);
+        for (let i = optsArray.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [optsArray[i], optsArray[j]] = [optsArray[j], optsArray[i]];
+        }
+        // 回傳選項結構，標記哪個是正確答案
+        return optsArray.map(ch => ({
+            chinese: ch,
+            isCorrect: ch === correctChinese
+        }));
+    }
+
+    // 載入新題目 (從剩餘未配對中挑選)
+    function loadNewQuestion() {
+        // 如果所有題目都已配對 => 遊戲完成
+        if (matchedSet.size === TOTAL_ITEMS) {
+            finishGame();
+            return false;
+        }
+
+        // 確保 currentGameItems 裡面都是尚未配對的項目 (當 matchedSet 更新時同步更新 currentGameItems)
+        // 呼叫 refreshUnmatchedList 來同步
+        refreshUnmatchedList();
+
+        if (currentGameItems.length === 0) {
+            // 理論上 matched 滿了應該觸發完成, 但保險再檢查一次
+            if (matchedSet.size === TOTAL_ITEMS) {
+                finishGame();
+            } else {
+                // 極端狀況重新整理
+                rebuildGameFromScratch();
+            }
+            return false;
+        }
+
+        const nextItem = getRandomUnmatchedItem();
+        if (!nextItem) {
+            if (matchedSet.size === TOTAL_ITEMS) finishGame();
+            return false;
+        }
+
+        currentQuestion = nextItem;
+        currentCorrectChinese = nextItem.chinese;
+
+        // 產生選項
+        currentOptions = generateOptions(currentCorrectChinese, currentQuestion.id);
+
+        // 更新 UI
+        currentEnglishSpan.innerText = nextItem.english;
+        renderOptions(currentOptions);
+        // 重設作答狀態
+        isAnswered = false;
+        nextButtonLock = false;
+        // 啟用下一題按鈕 (但先設為不可點？等作答後才能點下一題 比較合理)
+        nextBtn.disabled = true;
+        // 清除特殊高亮class & 啟用所有選項
+        enableOptions(true);
+        // 清空特殊訊息 (但保留普通)
+        feedbackDiv.innerHTML = "🤔 請選擇正確的中文配對";
+        feedbackDiv.style.background = "#e9e5d5";
+        return true;
+    }
+
+    // 渲染選項按鈕 (先清除舊的, 再建立)
+    function renderOptions(options) {
+        optionsContainer.innerHTML = "";
+        options.forEach((opt, idx) => {
+            const btn = document.createElement("button");
+            btn.innerText = opt.chinese;
+            btn.classList.add("option-btn");
+            btn.setAttribute("data-opt-index", idx);
+            btn.addEventListener("click", () => handleAnswer(opt, btn));
+            optionsContainer.appendChild(btn);
+        });
+    }
+
+    // 作答邏輯
+    function handleAnswer(selectedOption, btnElement) {
+        if (isAnswered) {
+            feedbackDiv.innerHTML = "⚠️ 你已經回答過這一題了！請點下一題繼續挑戰。";
+            return;
+        }
+        const isCorrect = selectedOption.isCorrect;
+        if (isCorrect) {
+            // 正確配對: 將此項目標記為已配對
+            if (!matchedSet.has(currentQuestion.id)) {
+                matchedSet.add(currentQuestion.id);
+                score++;
+                updateStatsUI();
+
+                // 從 currentGameItems 移除這個已配對的項目
+                refreshUnmatchedList();
+
+                feedbackDiv.innerHTML = `✅ 正確！「${currentQuestion.english}」的中文是「${currentCorrectChinese}」。 +1分`;
+                feedbackDiv.style.background = "#cfe8cf";
+                // 正確時高亮該正確按鈕
+                highlightCorrectOption(selectedOption.chinese);
+                disableOptions(true);
+                isAnswered = true;
+                // 啟用下一題按鈕
+                nextBtn.disabled = false;
+                // 檢查是否完成遊戲
+                if (matchedSet.size === TOTAL_ITEMS) {
+                    finishGame();
+                }
+            } else {
+                // 理論上已經配對過的項目不會出現在 currentQuestion 中，但防止萬一
+                feedbackDiv.innerHTML = `⚠️ 這個詞彙已經配對過了！請按下一題。`;
+                disableOptions(true);
+                isAnswered = true;
+                nextBtn.disabled = false;
+            }
+        } else {
+            // 錯誤處理
+            feedbackDiv.innerHTML = `❌ 錯誤！「${currentQuestion.english}」 不等於 「${selectedOption.chinese}」，再試一次！`;
+            feedbackDiv.style.background = "#ffe0d4";
+            // 錯誤時 暫時標記按鈕紅色效果並可恢復 (但不要禁用所有選項，讓學生能再試)
+            btnElement.classList.add("wrong-highlight");
+            setTimeout(() => {
+                btnElement.classList.remove("wrong-highlight");
+            }, 500);
+            // 不切換isAnswered，可以繼續嘗試
+        }
+    }
+
+    // 高亮正確選項 (幫助學習)
+    function highlightCorrectOption(correctChinese) {
+        const allBtns = document.querySelectorAll(".option-btn");
+        for (let btn of allBtns) {
+            if (btn.innerText === correctChinese) {
+                btn.classList.add("correct-highlight");
+            }
+        }
+    }
+
+    // 禁用/啟用所有選項按鈕
+    function disableOptions(disabled) {
+        const allBtns = document.querySelectorAll(".option-btn");
+        allBtns.forEach(btn => {
+            if (disabled) btn.disabled = true;
+            else {
+                btn.disabled = false;
+                btn.classList.remove("correct-highlight", "wrong-highlight");
+            }
+        });
+    }
+
+    function enableOptions(enabled) {
+        if (enabled) {
+            const allBtns = document.querySelectorAll(".option-btn");
+            allBtns.forEach(btn => {
+                btn.disabled = false;
+                btn.classList.remove("correct-highlight", "wrong-highlight");
+            });
+        } else {
+            disableOptions(true);
+        }
+    }
+
+    // 重新整理尚未配對清單 currentGameItems (根據 matchedSet)
+    function refreshUnmatchedList() {
+        const newUnmatched = [];
+        for (let i = 0; i < allEntries.length; i++) {
+            const entry = allEntries[i];
+            // 為每個項目生成唯一 id (使用英文+index或直接用index)
+            const itemId = entry.english + "_" + i; // 確保唯一性
+            if (!matchedSet.has(itemId)) {
+                newUnmatched.push({
+                    english: entry.english,
+                    chinese: entry.chinese,
+                    id: itemId
+                });
+            }
+        }
+        currentGameItems = newUnmatched;
+    }
+
+    // 重建遊戲（重置全部狀態）
+    function rebuildGameFromScratch() {
+        // 重置matchedSet
+        matchedSet.clear();
+        // 重置分數
+        score = 0;
+        isAnswered = false;
+        // 重新建立 allEntries 的id對應
+        for (let i = 0; i < allEntries.length; i++) {
+            const itemId = allEntries[i].english + "_" + i;
+            // 確保沒有任何id在matchedSet中
+        }
+        refreshUnmatchedList();  // 此時所有項目都在 currentGameItems
+        updateStatsUI();
+        // 載入新題目
+        const success = loadNewQuestion();
+        if (!success && matchedSet.size !== TOTAL_ITEMS) {
+            // 極端狀況手動再試一次
+            refreshUnmatchedList();
+            if (currentGameItems.length > 0) loadNewQuestion();
+            else finishGame();
+        }
+        // 清除完成區訊息
+        completionArea.innerHTML = "";
+        nextBtn.disabled = true;  // 未作答前不可下一題
+        isAnswered = false;
+        feedbackDiv.innerHTML = "✨ 新回合！選出正確配對 ✨";
+        feedbackDiv.style.background = "#e9e5d5";
+    }
+
+    // 遊戲完成
+    function finishGame() {
+        // 顯示祝賀訊息
+        completionArea.innerHTML = `<div class="completion-msg">🎉 恭喜！你完成了所有 ${TOTAL_ITEMS} 個科學詞彙配對！ 🎉<br>🏅 總得分：${score} / ${TOTAL_ITEMS}</div>`;
+        currentEnglishSpan.innerText = "🎓 完美達標 🎓";
+        optionsContainer.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:20px;">🌟 太棒了！ 詞彙大師 🌟</div>`;
+        nextBtn.disabled = true;
+        feedbackDiv.innerHTML = "🏁 遊戲已完成，按下「重新挑戰」可再次複習所有詞彙。";
+        feedbackDiv.style.background = "#d9e3c5";
+    }
+
+    // 下一題邏輯
+    function onNextQuestion() {
+        if (matchedSet.size === TOTAL_ITEMS) {
+            finishGame();
+            return;
+        }
+        if (!isAnswered) {
+            feedbackDiv.innerHTML = "⚠️ 請先回答當前題目，再繼續下一題！";
+            feedbackDiv.style.background = "#ffe0b5";
+            return;
+        }
+        // 載入新題目
+        const loaded = loadNewQuestion();
+        if (!loaded && matchedSet.size !== TOTAL_ITEMS) {
+            // 如果題目載入失敗但還沒完成，嘗試重建一次配對清單
+            refreshUnmatchedList();
+            if (currentGameItems.length > 0) loadNewQuestion();
+            else if (matchedSet.size === TOTAL_ITEMS) finishGame();
+            else {
+                // 修復機制: 重建全部
+                rebuildGameFromScratch();
+            }
+        }
+    }
+
+    // 事件綁定
+    nextBtn.addEventListener("click", onNextQuestion);
+    resetBtn.addEventListener("click", () => {
+        // 重置全部
+        rebuildGameFromScratch();
+        // 額外保證分數與匹配集同步
+        updateStatsUI();
+        // 如果有完成訊息清除
+        completionArea.innerHTML = "";
+        // 如果當前方塊是完成狀態，需重置題目
+        if (matchedSet.size < TOTAL_ITEMS && (!currentQuestion || currentGameItems.length === 0)) {
+            refreshUnmatchedList();
+            loadNewQuestion();
+        } else if (matchedSet.size === TOTAL_ITEMS) {
+            rebuildGameFromScratch();
+        }
+        // 確保按鈕狀態
+        nextBtn.disabled = true;
+        isAnswered = false;
+        feedbackDiv.innerHTML = "🔄 遊戲已重置！開始新的一輪 🔄";
+        feedbackDiv.style.background = "#e9e5d5";
+    });
+
+    // 初始化遊戲
+    function initGame() {
+        // 為每個詞條建立唯一id
+        for (let i = 0; i < allEntries.length; i++) {
+            // 預先建立 id 字串，存回allEntries方便, 但主要是refreshUnmatchedList用
+            // 直接沿用
+        }
+        rebuildGameFromScratch();
+    }
+
+    initGame();
+</script>
+</body>
+</html>
